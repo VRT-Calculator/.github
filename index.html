@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Irish VRT Calculator</title>
+    <style>
+        /* Container */
+        #vrt-calculator-container {
+            max-width: 500px;
+            margin: 30px auto;
+            padding: 25px;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+        }
+
+        /* Step Sections */
+        .vrt-step {
+            display: none;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .vrt-step.active {
+            display: block;
+        }
+
+        /* Inputs */
+        #vrt-calculator-container input, 
+        #vrt-calculator-container select {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0 15px 0;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        /* Buttons */
+        .vrt-button {
+            padding: 10px 15px;
+            margin: 5px 5px 0 0;
+            border: none;
+            border-radius: 4px;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 1em;
+        }
+
+        .vrt-button:hover {
+            background-color: #1e7e34;
+        }
+
+        /* Result */
+        #vrt-result {
+            padding: 15px;
+            background-color: #e9f7ef;
+            border: 2px solid #28a745;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        /* Previous Calculations */
+        #previous-calculations {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            font-size: 0.9em;
+        }
+
+        #previous-calculations h3 {
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .calculation-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85em;
+        }
+
+        .calculation-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Shake Animation */
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-5px); }
+            40% { transform: translateX(5px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+            100% { transform: translateX(0); }
+        }
+
+        .shake {
+            animation: shake 0.3s;
+            border-color: #dc3545 !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            #vrt-calculator-container {
+                padding: 20px;
+            }
+
+            .vrt-button {
+                width: 100%;
+                margin: 10px 0 0 0;
+            }
+        }
+
+/* Tooltip Container */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    color: #28a745; /* Green color to match the theme */
+    margin-left: 5px;
+    font-size: 1em;
+}
+
+/* Tooltip Text */
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 300px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    text-align: left;
+    border-radius: 6px;
+    padding: 10px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%; /* Position above the icon */
+    left: 50%;
+    margin-left: -150px; /* Center the tooltip */
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+/* Tooltip Arrow */
+.tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%; /* At the bottom of the tooltip */
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+}
+
+/* Show the Tooltip on Hover */
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+    </style>
+</head>
+<body>
+    <div id="vrt-calculator-container" role="form" aria-labelledby="calculator-title">
+        <!-- Step 1: Enter Details -->
+        <div class="vrt-step active" id="step-1">
+            <h2 id="calculator-title">Irish VRT Calculator</h2>
+
+            <label for="name">Name (optional):</label>
+            <input type="text" id="name" placeholder="Enter name for this calculation" />
+
+            <label for="vehicle-value">Vehicle Value (€):</label>
+            <input type="number" id="vehicle-value" aria-required="true" placeholder="Enter vehicle value in €" min="0" step="0.01" />
+
+            <label for="co2">CO₂ Emissions (g/km):</label>
+            <input type="number" id="co2" aria-required="true" placeholder="Enter CO₂ emissions in g/km" min="0" step="1" />
+
+            <label for="nox">NOx Emissions:</label>
+            <input type="number" id="nox" aria-required="true" placeholder="Enter NOx emissions" min="0" step="1" />
+
+            <label for="nox-unit">NOx Emissions Unit:</label>
+            <select id="nox-unit" aria-required="true">
+                <option value="">--Select Unit--</option>
+                <option value="mg/km">mg/km</option>
+                <option value="mg/kWh">mg/kWh</option>
+            </select>
+
+            <label for="engine-size">Engine Size (cc):</label>
+            <input type="number" id="engine-size" aria-required="true" placeholder="Enter engine size in cc" min="0" step="1" />
+
+            <label for="fuel-type">Fuel Type:</label>
+            <select id="fuel-type" aria-required="true">
+                <option value="">--Select Fuel Type--</option>
+                <option value="petrol">Petrol</option>
+                <option value="diesel">Diesel</option>
+                <option value="electric">Electric</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="other">Other</option>
+            </select>
+
+            <label for="vehicle-age">Vehicle Age (years):</label>
+            <input type="number" id="vehicle-age" aria-required="true" placeholder="Enter vehicle age in years" min="0" step="1" />
+
+            <button class="vrt-button" id="calculate-vrt">Calculate VRT</button> 
+            <!-- You can add more buttons if needed, e.g., Deduct VRT if applicable -->
+        </div>
+
+        <!-- Step 2: Show Result -->
+        <div class="vrt-step" id="step-2">
+            <div id="vrt-result" tabindex="0" aria-live="polite"></div>
+            <div id="previous-calculations" aria-label="Previous Calculations">
+                <h3>Previous Calculations</h3>
+                <div id="calculations-list"></div>
+            </div>
+            <button class="vrt-button" id="prev-2">Back</button>
+            <button class="vrt-button" id="reset">Reset</button>
+            <button class="vrt-button" id="clear-history">Clear History</button>
+            <button class="vrt-button" id="download-pdf">Download PDF</button>
+        </div>
+    </div>
+
+    <!-- jsPDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- jsPDF AutoTable Plugin -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        (function(){
+            const { jsPDF } = window.jspdf; // Destructure jsPDF from the imported module
+
+            const steps = document.querySelectorAll('.vrt-step');
+            let currentStep = 0;
+
+            const showStep = (index) => {
+                steps.forEach((step, i) => {
+                    step.classList.toggle('active', i === index);
+                });
+                currentStep = index;
+                // Set focus for accessibility
+                if(index === 0){
+                    document.getElementById('name').focus();
+                } else if(index === 1){
+                    document.getElementById('vrt-result').focus();
+                    displayPreviousCalculations();
+                }
+            };
+
+            // Helper function for validation
+            const validateField = (field, condition) => {
+                if (!condition) {
+                    field.classList.add('shake');
+                    field.style.borderColor = '#dc3545';
+                    field.setAttribute('aria-invalid', 'true');
+                    return false;
+                } else {
+                    field.classList.remove('shake');
+                    field.style.borderColor = '#ccc';
+                    field.removeAttribute('aria-invalid');
+                    return true;
+                }
+            };
+
+            // Validate Step 1 and proceed to Step 2
+            const validateInputs = () => {
+                const vehicleValue = document.getElementById('vehicle-value');
+                const co2 = document.getElementById('co2');
+                const nox = document.getElementById('nox');
+                const noxUnit = document.getElementById('nox-unit');
+                const engineSize = document.getElementById('engine-size');
+                const fuelType = document.getElementById('fuel-type');
+                const vehicleAge = document.getElementById('vehicle-age');
+                let valid = true;
+
+                // Validate Vehicle Value
+                valid &= validateField(vehicleValue, vehicleValue.value !== '' && parseFloat(vehicleValue.value) > 0);
+
+                // Validate CO2 Emissions
+                valid &= validateField(co2, co2.value !== '' && parseFloat(co2.value) >= 0);
+
+                // Validate NOx Emissions
+                valid &= validateField(nox, nox.value !== '' && parseFloat(nox.value) >= 0);
+
+                // Validate NOx Emissions Unit
+                valid &= validateField(noxUnit, noxUnit.value !== '');
+
+                // Validate Engine Size
+                valid &= validateField(engineSize, engineSize.value !== '' && parseFloat(engineSize.value) > 0);
+
+                // Validate Fuel Type
+                valid &= validateField(fuelType, fuelType.value !== '');
+
+                // Validate Vehicle Age
+                valid &= validateField(vehicleAge, vehicleAge.value !== '' && parseFloat(vehicleAge.value) >= 0);
+
+                return Boolean(valid);
+            };
+
+            // Handle Calculate VRT
+            document.getElementById('calculate-vrt').addEventListener('click', () => {
+                if (validateInputs()) {
+                    calculateVRT();
+                    showStep(1);
+                }
+            });
+
+            // Go back to Step 1
+            document.getElementById('prev-2').addEventListener('click', () => showStep(0));
+
+            // Reset the form
+            document.getElementById('reset').addEventListener('click', () => {
+                document.getElementById('name').value = '';
+                document.getElementById('vehicle-value').value = '';
+                document.getElementById('co2').value = '';
+                document.getElementById('nox').value = '';
+                document.getElementById('nox-unit').value = '';
+                document.getElementById('engine-size').value = '';
+                document.getElementById('fuel-type').value = '';
+                document.getElementById('vehicle-age').value = '';
+                document.getElementById('vrt-result').innerHTML = '';
+                showStep(0);
+            });
+
+            // Clear History
+            document.getElementById('clear-history').addEventListener('click', () => {
+                const confirmClear = confirm('Are you sure you want to clear all previous calculations?');
+                if (confirmClear) {
+                    localStorage.removeItem('vrtCalculations');
+                    displayPreviousCalculations();
+                }
+            });
+
+            // Handle Download PDF
+            document.getElementById('download-pdf').addEventListener('click', () => {
+                generatePDF();
+            });
+
+            // Calculate VRT and display/save result
+            const calculateVRT = () => {
+                const name = document.getElementById('name').value.trim();
+                const vehicleValue = parseFloat(document.getElementById('vehicle-value').value);
+                const co2 = parseFloat(document.getElementById('co2').value);
+                const nox = parseFloat(document.getElementById('nox').value);
+                const noxUnit = document.getElementById('nox-unit').value;
+                const engineSize = parseFloat(document.getElementById('engine-size').value);
+                const fuelType = document.getElementById('fuel-type').value;
+                const vehicleAge = parseFloat(document.getElementById('vehicle-age').value);
+                const resultDiv = document.getElementById('vrt-result');
+
+                let vrtAmount = 0;
+                let co2VRT = 0;
+                let otherVRT = 0;
+                let noxCharge = 0;
+
+                // Define CO2 Emission Bands
+                const co2Bands = [
+                    { max: 50, percentage: 7, fixed: 140 },
+                    { max: 80, percentage: 9, fixed: 180 },
+                    { max: 85, percentage: 9.75, fixed: 195 },
+                    { max: 90, percentage: 10.5, fixed: 210 },
+                    { max: 95, percentage: 11.25, fixed: 225 },
+                    { max: 100, percentage: 12, fixed: 240 },
+                    { max: 105, percentage: 12.75, fixed: 255 },
+                    { max: 110, percentage: 13.5, fixed: 270 },
+                    { max: 115, percentage: 15.25, fixed: 305 },
+                    { max: 120, percentage: 16, fixed: 320 },
+                    { max: 125, percentage: 16.75, fixed: 335 },
+                    { max: 130, percentage: 17.5, fixed: 350 },
+                    { max: 135, percentage: 19.25, fixed: 385 },
+                    { max: 140, percentage: 20, fixed: 400 },
+                    { max: 145, percentage: 21.5, fixed: 430 },
+                    { max: 150, percentage: 25, fixed: 500 },
+                    { max: 155, percentage: 27.5, fixed: 550 },
+                    { max: 170, percentage: 30, fixed: 600 },
+                    { max: 190, percentage: 35, fixed: 700 },
+                    { max: Infinity, percentage: 41, fixed: 820 }
+                ];
+
+                // Determine Applicable CO2 Band
+                let applicableBand = co2Bands.find(band => co2 <= band.max);
+
+                if (!applicableBand) {
+                    // Default if no band found, though Infinity covers all
+                    applicableBand = { percentage: 0, fixed: 0 };
+                }
+
+                // Calculate CO2-based VRT
+                const percentageVRT = (applicableBand.percentage / 100) * vehicleValue;
+                const fixedVRT = applicableBand.fixed;
+                co2VRT = Math.max(percentageVRT, fixedVRT);
+
+                // Other VRT Components (Engine Size, Fuel Type, Vehicle Age)
+                // Engine Size-based VRT
+                if (engineSize <= 2000) {
+                    otherVRT += 100;
+                } else if (engineSize <= 3000) {
+                    otherVRT += 200;
+                } else {
+                    otherVRT += 300;
+                }
+
+                // Fuel Type-based Surcharge
+                switch(fuelType) {
+                    case 'petrol':
+                        otherVRT += 100;
+                        break;
+                    case 'diesel':
+                        otherVRT += 150;
+                        break;
+                    case 'electric':
+                        otherVRT += 50;
+                        break;
+                    case 'hybrid':
+                        otherVRT += 75;
+                        break;
+                    default:
+                        otherVRT += 100;
+                }
+
+                // Vehicle Age-based Discount
+                if(vehicleAge > 15){
+                    otherVRT *= 0.75; // 25% discount for vehicles older than 15 years
+                }
+
+                // NOx Charge Calculation
+                noxCharge = calculateNOxCharge(nox);
+
+                // Total VRT Amount
+                vrtAmount = Math.round(co2VRT + otherVRT + noxCharge); // Round to nearest euro
+
+                // Display Result
+                resultDiv.innerHTML = `
+    <strong>Calculated VRT</strong><br>
+    Name: <strong>${name || 'N/A'}</strong><br>
+    Vehicle Value: <strong>€${vehicleValue.toFixed(2)}</strong><br>
+    CO₂ Emissions: <strong>${co2} g/km</strong><br>
+    NOx Emissions: <strong>${nox} ${noxUnit}</strong><br>
+    Engine Size: <strong>${engineSize} cc</strong><br>
+    Fuel Type: <strong>${capitalizeFirstLetter(fuelType)}</strong><br>
+    Vehicle Age: <strong>${vehicleAge} years</strong><br>
+    <hr>
+    <strong>CO₂-based VRT: €${co2VRT.toFixed(2)}</strong><br>
+    <strong>Other VRT Components: €${otherVRT.toFixed(2)}</strong><br>
+    <strong>NOx Charge: €${noxCharge.toFixed(2)}</strong><br>
+    <hr>
+    <strong>Total VRT Due: €${vrtAmount.toFixed(2)}</strong>
+    <span class="tooltip">&#9432;
+        <span class="tooltiptext">This is an estimation based on the information you provided and calculated using data shared by the Revenue Board. The actual VRT amount cannot be guaranteed as it may include a physical inspection of the vehicle before it is determined.</span>
+    </span><br>
+`;
+
+                // Save to localStorage
+                const calculation = {
+                    name: name || 'N/A',
+                    vehicleValue: vehicleValue,
+                    co2: co2,
+                    nox: nox,
+                    noxUnit: noxUnit,
+                    engineSize: engineSize,
+                    fuelType: fuelType,
+                    vehicleAge: vehicleAge,
+                    co2VRT: co2VRT,
+                    otherVRT: otherVRT,
+                    noxCharge: noxCharge,
+                    vrtAmount: vrtAmount,
+                    timestamp: new Date().toLocaleString()
+                };
+
+                saveCalculation(calculation);
+            };
+
+            // Helper function to calculate NOx Charge
+            const calculateNOxCharge = (nox) => {
+                let charge = 0;
+
+                if (nox <= 40) {
+                    charge += 5;
+                } else if (nox <= 80) {
+                    charge += 5 + 15;
+                } else {
+                    charge += 5 + 15 + 25;
+                }
+
+                return charge;
+            };
+
+            // Helper function to capitalize first letter
+            const capitalizeFirstLetter = (string) => {
+                return string.charAt(0).toUpperCase() + string.slice(1);
+            };
+
+            // Save calculation to localStorage
+            const saveCalculation = (calculation) => {
+                let calculations = JSON.parse(localStorage.getItem('vrtCalculations')) || [];
+                calculations.unshift(calculation); // Add to the beginning
+                localStorage.setItem('vrtCalculations', JSON.stringify(calculations));
+            };
+
+            // Display previous calculations, excluding the latest one
+            const displayPreviousCalculations = () => {
+                const calculationsList = document.getElementById('calculations-list');
+                calculationsList.innerHTML = '';
+                const calculations = JSON.parse(localStorage.getItem('vrtCalculations')) || [];
+
+                if(calculations.length <=1){
+                    calculationsList.innerHTML = '<p>No previous calculations found.</p>';
+                    return;
+                }
+
+                // Exclude the latest calculation
+                const previousCalculations = calculations.slice(1);
+
+                previousCalculations.forEach(calc => {
+                    const item = document.createElement('div');
+                    item.classList.add('calculation-item');
+                    item.innerHTML = `
+                        <strong>Total VRT Due: €${calc.vrtAmount.toFixed(2)}</strong><br>
+                        CO₂-based VRT: €${calc.co2VRT.toFixed(2)}<br>
+                        Other VRT Components: €${calc.otherVRT.toFixed(2)}<br>
+                        NOx Charge: €${calc.noxCharge.toFixed(2)}<br>
+                        Name: ${calc.name}<br>
+                        Vehicle Value: €${calc.vehicleValue.toFixed(2)}<br>
+                        CO₂ Emissions: ${calc.co2} g/km<br>
+                        NOx Emissions: ${calc.nox} ${calc.noxUnit}<br>
+                        Engine Size: ${calc.engineSize} cc<br>
+                        Fuel Type: ${capitalizeFirstLetter(calc.fuelType)}<br>
+                        Vehicle Age: ${calc.vehicleAge} years<br>
+                        <em>${calc.timestamp}</em>
+                    `;
+                    calculationsList.appendChild(item);
+                });
+            };
+
+            // Generate PDF containing current and previous calculations
+            const generatePDF = () => {
+                const doc = new jsPDF();
+
+                // Title
+                doc.setFontSize(16);
+                doc.text("Irish VRT Calculator Report", 105, 20, null, null, 'center');
+
+                // Current Calculation
+                doc.setFontSize(12);
+                doc.text("Current Calculation:", 14, 30);
+
+                const currentCalculation = JSON.parse(localStorage.getItem('vrtCalculations'))?.[0];
+                if(currentCalculation){
+                    const currentData = [
+                        ["Name", currentCalculation.name],
+                        ["Vehicle Value (€)", `€${currentCalculation.vehicleValue.toFixed(2)}`],
+                        ["CO₂ Emissions (g/km)", currentCalculation.co2],
+                        ["NOx Emissions", `${currentCalculation.nox} ${currentCalculation.noxUnit}`],
+                        ["Engine Size (cc)", currentCalculation.engineSize],
+                        ["Fuel Type", capitalizeFirstLetter(currentCalculation.fuelType)],
+                        ["Vehicle Age (years)", currentCalculation.vehicleAge],
+                        ["CO₂-based VRT (€)", `€${currentCalculation.co2VRT.toFixed(2)}`],
+                        ["Other VRT Components (€)", `€${currentCalculation.otherVRT.toFixed(2)}`],
+                        ["NOx Charge (€)", `€${currentCalculation.noxCharge.toFixed(2)}`],
+                        ["Total VRT Due (€)", `€${currentCalculation.vrtAmount.toFixed(2)}`],
+                        ["Timestamp", currentCalculation.timestamp]
+                    ];
+
+                    doc.autoTable({
+                        startY: 35,
+                        head: [['Field', 'Value']],
+                        body: currentData,
+                        theme: 'grid',
+                        styles: { halign: 'left' }
+                    });
+                } else {
+                    doc.text("No current calculation available.", 14, 35);
+                }
+
+                // Previous Calculations
+                const calculations = JSON.parse(localStorage.getItem('vrtCalculations')) || [];
+                if(calculations.length > 1){
+                    doc.addPage();
+                    doc.setFontSize(14);
+                    doc.text("Previous Calculations:", 14, 20);
+
+                    calculations.slice(1).forEach((calc, index) => {
+                        doc.setFontSize(12);
+
+                        const data = [
+                            ["Name", calc.name],
+                            ["Vehicle Value (€)", `€${calc.vehicleValue.toFixed(2)}`],
+                            ["CO₂ Emissions (g/km)", calc.co2],
+                            ["NOx Emissions", `${calc.nox} ${calc.noxUnit}`],
+                            ["Engine Size (cc)", calc.engineSize],
+                            ["Fuel Type", capitalizeFirstLetter(calc.fuelType)],
+                            ["Vehicle Age (years)", calc.vehicleAge],
+                            ["CO₂-based VRT (€)", `€${calc.co2VRT.toFixed(2)}`],
+                            ["Other VRT Components (€)", `€${calc.otherVRT.toFixed(2)}`],
+                            ["NOx Charge (€)", `€${calc.noxCharge.toFixed(2)}`],
+                            ["Total VRT Due (€)", `€${calc.vrtAmount.toFixed(2)}`],
+                            ["Timestamp", calc.timestamp]
+                        ];
+
+                        doc.autoTable({
+                            startY: 25 + (index * 80),
+                            head: [['Field', 'Value']],
+                            body: data,
+                            theme: 'grid',
+                            styles: { halign: 'left' },
+                            margin: { left: 14, right: 14 },
+                            pageBreak: 'auto'
+                        });
+
+                        // Add new page if content exceeds page height
+                        if (doc.previousAutoTable.finalY > 250 && index !== calculations.length - 2) {
+                            doc.addPage();
+                        }
+                    });
+                } else {
+                    doc.setFontSize(12);
+                    doc.text("No previous calculations available.", 14, 30);
+                }
+
+                // Save the PDF
+                doc.save('VRT_Calculations_Report.pdf');
+            };
+
+            // Enable Enter key to trigger button clicks
+            document.getElementById('vrt-calculator-container').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    if(currentStep === 0){
+                        // Trigger Calculate VRT button
+                        document.getElementById('calculate-vrt').click();
+                    } else if(currentStep === 1){
+                        // Determine which button to trigger based on focus
+                        const activeElement = document.activeElement;
+                        if(activeElement.id === 'clear-history'){
+                            document.getElementById('clear-history').click();
+                        } else if(activeElement.id === 'download-pdf'){
+                            document.getElementById('download-pdf').click();
+                        } else if(activeElement.id === 'reset'){
+                            document.getElementById('reset').click();
+                        } else {
+                            // Default to reset if focus is on result
+                            document.getElementById('reset').click();
+                        }
+                    }
+                }
+            });
+
+        })();
+    </script>
+</body>
+</html>
