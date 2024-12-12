@@ -3,7 +3,7 @@
 A user-friendly web application designed to help vehicle owners in Ireland estimate their Vehicle Registration Tax (VRT) based on various vehicle attributes. Whether you're purchasing a new vehicle or reassessing your current one, this tool provides accurate VRT calculations tailored to your vehicle's specifications.
 
 ![Screenshot of Irish VRT Calculator Main Page](https://github.com/VRT-Calculator/.github/blob/main/screen01.png)
-![Screenshot of Irish VRT Calculator Result Page](https://github.com/VRT-Calculator/.github/blob/main/screen01.png)
+![Screenshot of Irish VRT Calculator Result Page](https://github.com/VRT-Calculator/.github/blob/main/screen02.png)
 
 ## Table of Contents
 - [Project Overview](#project-overview)
